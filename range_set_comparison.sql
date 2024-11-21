@@ -1,27 +1,40 @@
+-- using int4range instead of int[][], since int4range is more suitable for range comparison.
 CREATE OR REPLACE FUNCTION compare_range_sets(
-    range_set1 int[][],
-    range_set2 int[][]
-) RETURNS TEXT AS $$
+    set1 int4range[],
+    set2 int4range[],
+    operator text
+) RETURNS boolean[] AS $$
 DECLARE
-    i int;
-    j int;
-    comparison_result TEXT;
+    result boolean[];
 BEGIN
-   
-    comparison_result := 'incomparable';
-
-    FOR i IN array_lower(range_set1, 1)..array_upper(range_set1, 1) LOOP
-        FOR j IN array_lower(range_set2, 1)..array_upper(range_set2, 1) LOOP
-            IF range_set1[i][1] < range_set2[j][1] AND range_set1[i][2] < range_set2[j][2] THEN
-                comparison_result := 'smaller';
-            ELSIF range_set1[i][1] = range_set2[j][1] AND range_set1[i][2] = range_set2[j][2] THEN
-                comparison_result := 'equal';
-            ELSIF range_set1[i][1] > range_set2[j][1] AND range_set1[i][2] > range_set2[j][2] THEN
-                comparison_result := 'greater';
-            END IF;
-        END LOOP;
+    result := ARRAY[]::boolean[];
+    FOR i IN 1..array_length(set1, 1) LOOP
+        IF operator = '<' THEN
+            result := array_append(result, set1[i] < set2[i]);
+        ELSIF operator = '>' THEN
+            result := array_append(result, set1[i] > set2[i]);
+        ELSIF operator = '=' THEN
+            result := array_append(result, set1[i] = set2[i]);
+        ELSE
+            RAISE EXCEPTION 'Invalid operator. Use <, >, or =';
+        END IF;
     END LOOP;
-
-    RETURN comparison_result;
+    RETURN result;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Example usage of the compare_range_sets function
+-- SELECT compare_range_sets(
+--      ARRAY['[100,200]'::int4range, '[1,3]'::int4range, '[500,700]'::int4range],
+--      ARRAY['[900,1000]'::int4range, '[2000,5000]'::int4range, '[2,2]'::int4range],
+--      '<'
+-- );
+
+-- SELECT compare_range_sets(
+--     ARRAY['[100,200]'::int4range, '[1,3]'::int4range, '[500,700]'::int4range],
+--     ARRAY['[900,1000]'::int4range, '[2000,5000]'::int4range, '[2,2]'::int4range],
+--     '>'
+-- );
+
+-- SELECT compare_range_sets(
+--     ARRAY['[100,200]'::int4range, '[1,3]'::int4range, '[500,700]'::int4range],
