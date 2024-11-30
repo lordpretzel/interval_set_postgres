@@ -1,9 +1,7 @@
 -- using int4range instead of int[][], since int4range is more suitable for range comparison.
-CREATE OR REPLACE FUNCTION compare_range_sets(
-    set1 int4range[],
-    set2 int4range[],
-    operator text
-) RETURNS boolean[] AS $$
+
+CREATE OR REPLACE FUNCTION range_set_compare(set1 int4range[], set2 int4range[],
+                                             operator text) RETURNS boolean[] AS $$
 DECLARE
     result boolean[];
 BEGIN
@@ -23,18 +21,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Example usage of the compare_range_sets function
+-- not safe to do. assumes that theyre the same bound when there could be other possibilities
+-- for equality, you need to test for overlap if any of the two intervals, that could also be true.
+-- do all pairwise comparisons of intervals
+-- if you sort by lower bound you can use o(n log n)
+-- same thing with smaller and larger than
+ -- Example usage of the compare_range_sets function
 -- SELECT compare_range_sets(
 --      ARRAY['[100,200]'::int4range, '[1,3]'::int4range, '[500,700]'::int4range],
 --      ARRAY['[900,1000]'::int4range, '[2000,5000]'::int4range, '[2,2]'::int4range],
 --      '<'
 -- );
-
--- SELECT compare_range_sets(
+ -- SELECT compare_range_sets(
 --     ARRAY['[100,200]'::int4range, '[1,3]'::int4range, '[500,700]'::int4range],
 --     ARRAY['[900,1000]'::int4range, '[2000,5000]'::int4range, '[2,2]'::int4range],
 --     '>'
 -- );
-
--- SELECT compare_range_sets(
+ -- SELECT compare_range_sets(
 --     ARRAY['[100,200]'::int4range, '[1,3]'::int4range, '[500,700]'::int4range],

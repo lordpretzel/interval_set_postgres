@@ -13,8 +13,8 @@ BEGIN
         FOR j IN array_lower(r, 1)..array_upper(r, 1) LOOP
         
             result := result || ARRAY[ARRAY[
-                    l[i][1] - r[j][1],
-                    l[i][2] - r[j][2]
+                    l[i][1] - r[j][2],
+                    l[i][2] - r[j][1]
                 ]];
         END LOOP;
     END LOOP;
