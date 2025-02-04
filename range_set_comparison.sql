@@ -24,7 +24,7 @@ $$ LANGUAGE plpgsql;
 -- not safe to do. assumes that theyre the same bound when there could be other possibilities
 -- for equality, you need to test for overlap if any of the two intervals, that could also be true.
 -- do all pairwise comparisons of intervals
--- if you sort by lower bound you can use o(n log n)
+ -- if you sort by lower bound you can use o(n log n)
 -- same thing with smaller and larger than
  -- Example usage of the compare_range_sets function
 -- SELECT compare_range_sets(

@@ -1,25 +1,38 @@
-CREATE OR REPLACE FUNCTION normalize(rangeset int4range[])
-RETURNS int4range[] AS $$
+CREATE OR REPLACE FUNCTION normalize(rangeset int[][])
+RETURNS int[][] AS $$
 DECLARE
-    result int4range[];
-    current_range int4range;
-    merged_ranges int4range[] := '{}';
+    result int[][] := '{}';
+    sorted_ranges int[][] := '{}';
+    range_record int[];
+    current_min int;
+    current_max int;
 BEGIN
-    -- Sort the rangeset
-    result := ARRAY(SELECT * FROM UNNEST(rangeset) ORDER BY lower(unnest), upper(unnest));
-    IF array_length(result, 1) IS NULL THEN
-        RETURN '{}';
+    -- Edge case: return empty if input is empty
+    IF array_length(rangeset, 1) IS NULL THEN
+        RETURN result;
     END IF;
-    current_range := result[1];
-    FOR i IN 2..array_length(result, 1) LOOP
-        IF upper(current_range) >= lower(result[i]) THEN
-            current_range := int4range(lower(current_range), GREATEST(upper(current_range), upper(result[i])), '[]');
+
+    -- Sort ranges by start value
+    SELECT array_agg(r ORDER BY r[1]) INTO sorted_ranges FROM unnest(rangeset) AS r;
+
+    -- Initialize with the first range
+    current_min := sorted_ranges[1][1];
+    current_max := sorted_ranges[1][2];
+
+    -- Iterate through sorted ranges and merge overlapping ones
+    FOR range_record IN SELECT unnest(sorted_ranges) LOOP
+        IF range_record[1] <= current_max THEN
+            current_max := GREATEST(current_max, range_record[2]);
         ELSE
-            merged_ranges := array_append(merged_ranges, current_range);
-            current_range := result[i];
+            result := array_append(result, ARRAY[current_min, current_max]);
+            current_min := range_record[1];
+            current_max := range_record[2];
         END IF;
     END LOOP;
-    merged_ranges := array_append(merged_ranges, current_range);
-    RETURN merged_ranges;
+
+    -- Append the last range
+    result := array_append(result, ARRAY[current_min, current_max]);
+
+    RETURN result;
 END;
 $$ LANGUAGE plpgsql;

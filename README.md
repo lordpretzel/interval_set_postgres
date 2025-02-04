@@ -26,6 +26,25 @@ This project is focused on building the extension for Postgres functions in GPRO
     ```sh
     psql -d <database_name> -c "SELECT <function_name>(<arguments>);"
     ```
+
+4. Syntax for SQL Functions:
+
+- Addition, Subtraction, Multiplication
+
+```sh
+SELECT range_set_add(
+    ARRAY[ARRAY[-10, -10], ARRAY[3, 3]],
+    ARRAY[ARRAY[-10, -10], ARRAY[20, 20]]
+);
+```
+
+- Multiplication
+
+```sh
+
+```
+
+
 ## License
 This project is licensed under the Apache 2.0 License. See the `LICENSE` file for more details.
 
