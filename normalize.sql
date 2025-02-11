@@ -1,9 +1,10 @@
-CREATE OR REPLACE FUNCTION normalize(rangeset int[][])
-RETURNS int[][] AS $$
+CREATE OR REPLACE FUNCTION range_normalize(rangeset int4range[])
+RETURNS int4range[] AS $$
 DECLARE
-    result int[][] := '{}';
-    sorted_ranges int[][] := '{}';
-    range_record int[];
+    result int4range[] := '{}';
+    sorted_ranges int4range[] := '{}';
+    range_record int4range;
+    pos int;
     current_min int;
     current_max int;
 BEGIN
@@ -13,25 +14,26 @@ BEGIN
     END IF;
 
     -- Sort ranges by start value
-    SELECT array_agg(r ORDER BY r[1]) INTO sorted_ranges FROM unnest(rangeset) AS r;
+    sorted_ranges := lsort(rangeset);
 
     -- Initialize with the first range
-    current_min := sorted_ranges[1][1];
-    current_max := sorted_ranges[1][2];
+    current_min := lower(sorted_ranges[1]);
+    current_max := upper(sorted_ranges[1]);
 
     -- Iterate through sorted ranges and merge overlapping ones
-    FOR range_record IN SELECT unnest(sorted_ranges) LOOP
-        IF range_record[1] <= current_max THEN
-            current_max := GREATEST(current_max, range_record[2]);
+    FOR i IN array_lower(sorted_ranges, 1)..array_upper(sorted_ranges, 1) LOOP
+      range_record := sorted_ranges[i];
+        IF lower(range_record) <= current_max THEN
+            current_max := GREATEST(current_max, upper(range_record));
         ELSE
-            result := array_append(result, ARRAY[current_min, current_max]);
-            current_min := range_record[1];
-            current_max := range_record[2];
+          result := array_append(result, int4range(current_min, current_max));
+            current_min := lower(range_record);
+            current_max := upper(range_record);
         END IF;
     END LOOP;
 
     -- Append the last range
-    result := array_append(result, ARRAY[current_min, current_max]);
+    result := array_append(result, int4range(current_min, current_max));
 
     RETURN result;
 END;
